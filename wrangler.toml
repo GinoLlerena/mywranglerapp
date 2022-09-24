@@ -1,0 +1,7 @@
+name = "mywranglerapp"
+main = "src/index.js"
+compatibility_date = "2022-09-24"
+node_compat = true
+
+[build]
+command = "npm run build"
