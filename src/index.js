@@ -12,6 +12,7 @@
 import {Router, listen} from 'worktop';
 import {getFaunaError} from './utils.js';
 import { addElement, deleteElement, getElement, getElements, updateElement } from './api/element/element.js';
+//import {bundleMDX} from "mdx-bundler";
 
 const router = new Router();
 
@@ -76,8 +77,17 @@ router.add('POST', '/elements', async (request, response) => {
   router.add('GET', '/elements/:elementId', async (request, response) => {
 	try {
 	  const elementId = request.params.elementId;
-	  const result = await getElement(elementId)
-	  response.send(200, result);
+	  const element = await getElement(elementId)
+		/*const result = await bundleMDX({
+			source: element.context
+		})*/
+		const allowedOrigin = checkOrigin(request)
+		return new Response(JSON.stringify(element), {
+			headers: {
+				'Content-Type': 'application/json',
+				...corsHeaders(allowedOrigin)
+			},
+		});
   
 	} catch (error) {
 	  const faunaError = getFaunaError(error);
