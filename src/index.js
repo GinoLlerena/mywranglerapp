@@ -15,12 +15,36 @@ import { addElement, deleteElement, getElement, getElements, updateElement } fro
 
 const router = new Router();
 
-router.add('GET', '/', async (request, response) => {
+const allowedOrigins = [
+	"http://localhost:8080",
+	"https://mywranglerapp.gino-llerena.workers.dev"
+]
+
+const corsHeaders = (origin) => ({
+	"Access-Control-Allow-Headers": "*",
+	"Access-Control-Allow-Methods": "GET, POST, DELETE, PATCH, OPTIONS, PUT",
+	"Access-Control-Allow-Origin": origin
+})
+
+const checkOrigin = request => {
+	const origin = request.headers.get("Origin")
+	const foundOrigin = allowedOrigins.find(allowedOrigin => allowedOrigin.includes(origin))
+	return foundOrigin ? foundOrigin : "*"
+}
+
+router.add('GET', '/elements', async (request, response) => {
   
 	try {
+
 		const elements = await getElements()
-		//response.status(200).json(elements.data);
-		response.send(200, elements.data);
+		const allowedOrigin = checkOrigin(request)
+
+		return new Response(JSON.stringify(elements.data), {
+			headers: {
+				'Content-Type': 'application/json',
+				...corsHeaders(allowedOrigin)
+			},
+		});
 	}
 	catch(error){
 		const faunaError = getFaunaError(error);
@@ -30,40 +54,29 @@ router.add('GET', '/', async (request, response) => {
 
 router.add('POST', '/elements', async (request, response) => {
 	try {
-	  const { element } = await request.body();
-  
-	  const result = await addElement(element)
-  
-	  response.send(200, {
-		elementId: result.ref.id
-	  });
+
+		const data =  await request.body()
+		const { element } = JSON.parse(data)
+	    const result = await addElement(element)
+
+		const allowedOrigin = checkOrigin(request)
+		return new Response(JSON.stringify(result), {
+			headers: {
+				'Content-Type': 'application/json',
+				...corsHeaders(allowedOrigin)
+			},
+		});
+
 	} catch (error) {
-	  const faunaError = getFaunaError(error);
-	  response.send(faunaError.status, faunaError);
+		  const faunaError = getFaunaError(error);
+		  response.send(faunaError.status, faunaError);
 	}
   });
 
   router.add('GET', '/elements/:elementId', async (request, response) => {
 	try {
 	  const elementId = request.params.elementId;
-  
 	  const result = await getElement(elementId)
-  
-	  response.send(200, result);
-  
-	} catch (error) {
-	  const faunaError = getFaunaError(error);
-	  response.send(faunaError.status, faunaError);
-	}
-  });
-  
-  router.add('DELETE', '/elements/:elementId', async (request, response) => {
-
-	try {
-	  const elementId = request.params.elementId;
-  
-	  const result = await deleteElement(elementId)
-  
 	  response.send(200, result);
   
 	} catch (error) {
@@ -72,15 +85,51 @@ router.add('POST', '/elements', async (request, response) => {
 	}
   });
 
-  router.add('PATCH', '/elements/:elementId', async (request, response) => {
+	router.add('OPTIONS', '/elements/:elementId', async (request, response) => {
+
+		try {
+			const allowedOrigin = checkOrigin(request)
+			return new Response("OK", { headers : corsHeaders(allowedOrigin)})
+		} catch (error) {
+			const faunaError = getFaunaError(error);
+			response.send(faunaError.status, faunaError);
+		}
+	});
+  
+	router.add('DELETE', '/elements/:elementId', async (request, response) => {
+
+		try {
+			  const elementId = request.params.elementId;
+			  const result = await deleteElement(elementId)
+
+			  const allowedOrigin = checkOrigin(request)
+			  return new Response(JSON.stringify(result), {
+				headers: {
+					'Content-Type': 'application/json',
+					...corsHeaders(allowedOrigin)
+				},
+			  });
+
+		} catch (error) {
+		  const faunaError = getFaunaError(error);
+		  response.send(faunaError.status, faunaError);
+		}
+	});
+
+  router.add('PUT', '/elements/:elementId', async (request, response) => {
 
 	try {
-	  const elementId = request.params.elementId;
-	  const { element } = await request.body();
-  
+	  const data = await request.body();
+	  const { element } = JSON.parse(data)
 	  const result = await updateElement(element)
-  
-	  response.send(200, result);
+
+		const allowedOrigin = checkOrigin(request)
+		return new Response(JSON.stringify(result), {
+			headers: {
+				'Content-Type': 'application/json',
+				...corsHeaders(allowedOrigin)
+			},
+		});
   
 	} catch (error) {
 	  const faunaError = getFaunaError(error);
